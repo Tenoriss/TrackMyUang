@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyKeuanganJir</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+/* ================= SPLASH ================= */
+#splash{
+position:fixed;
+inset:0;
+background:#111;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:9999;
+color:white;
+}
+#logoSplash{
+width:130px;
+height:130px;
+border-radius:50%;
+background:url('logo.jpeg') center/cover no-repeat;
+box-shadow:0 0 25px #4e73df,0 0 60px #764ba2;
+animation:glow 2s infinite alternate;
+}
+@keyframes glow{
+from{box-shadow:0 0 20px #4e73df;}
+to{box-shadow:0 0 60px #1cc88a;}
+}
+.loadingText{
+margin-top:15px;
+font-size:14px;
+opacity:0.8;
+letter-spacing:2px;
+}
+
+/* ================= DARK MODE ================= */
+body.dark{
+background:#111;
+color:white;
+}
+body.dark .card{
+background:#1e1e1e;
+color:white;
+}
+body.dark table th{
+background:#333;
+}
+body.dark input,
+body.dark select{
+background:#333;
+color:white;
+border:1px solid #555;
+}
+
+/* ================= GENERAL ================= */
+@keyframes gradientMove {
+0% {background-position:0% 50%;}
+50% {background-position:100% 50%;}
+100% {background-position:0% 50%;}
+}
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(-45deg,#667eea,#764ba2,#4e73df,#1cc88a);
+background-size:400% 400%;
+animation:gradientMove 15s ease infinite;
+}
+.container{
+max-width:950px;
+margin:auto;
+padding:20px;
+}
+.card{
+background:white;
+padding:20px;
+border-radius:15px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+animation:fadeIn 0.8s ease-in-out;
+}
+@keyframes fadeIn{
+from{opacity:0; transform:translateY(30px);}
+to{opacity:1; transform:translateY(0);}
+}
+h2{text-align:center;}
+.balance{
+font-size:20px;
+font-weight:bold;
+margin:10px 0;
+}
+form{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+}
+input,select,button{
+padding:8px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+button{
+background:#4e73df;
+color:white;
+border:none;
+cursor:pointer;
+transition:0.3s;
+}
+button:hover{
+transform:translateY(-3px);
+box-shadow:0 8px 20px rgba(0,0,0,0.2);
+}
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:15px;
+}
+th,td{
+border:1px solid #ddd;
+padding:8px;
+text-align:center;
+}
+th{
+background:#4e73df;
+color:white;
+}
+.income{color:green;}
+.expense{color:red;}
+.progress-bar{
+width:100%;
+background:#ddd;
+border-radius:10px;
+overflow:hidden;
+height:20px;
+margin-top:5px;
+}
+.progress{
+height:100%;
+background:#1cc88a;
+width:0%;
+transition:width 0.8s cubic-bezier(.68,-0.55,.27,1.55);
+}
+#authBox{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+}
+.auth-card{
+background:white;
+padding:30px;
+border-radius:15px;
+box-shadow:0 10px 25px rgba(0,0,0,0.3);
+animation:fadeIn 0.8s ease-in-out;
+}
+.profile-img{
+width:80px;
+height:80px;
+border-radius:50%;
+object-fit:cover;
+cursor:pointer;
+border:3px solid #4e73df;
+}
+@media(max-width:600px){
+form{flex-direction:column;}
+}
+/* ================= MOBILE NOTICE ================= */
+#mobileNotice{
+display:none;
+background:#fff3cd;
+color:#856404;
+padding:12px;
+text-align:center;
+font-size:14px;
+font-weight:500;
+}
+
+@media(max-width:768px){
+#mobileNotice{
+display:block;
+}
+}
+</style>
+</head>
+<body>
+
+<div id="splash">
+<div id="logoSplash"></div>
+<div class="loadingText">Loading...</div>
+</div>
+
+<audio id="clickSound" src="click.mp3"></audio>
+
+<!-- AUTH -->
+<div id="authBox">
+<div class="auth-card" id="loginCard">
+<h2>🔐 Sign In</h2>
+<input type="text" id="loginUser" placeholder="Username">
+<input type="password" id="loginPass" placeholder="Password">
+<button onclick="login()">Login</button>
+<p>Belum punya akun? <span style="color:blue;cursor:pointer" onclick="showSignup()">Sign Up</span></p>
+</div>
+
+<div class="auth-card" id="signupCard" style="display:none;">
+<h2>🆕 Sign Up</h2>
+<input type="text" id="signupUser" placeholder="Username">
+<input type="password" id="signupPass" placeholder="Password">
+<button onclick="signup()">Register</button>
+<p>Sudah punya akun? <span style="color:blue;cursor:pointer" onclick="showLogin()">Sign In</span></p>
+</div>
+</div>
+
+<div id="mobileNotice">
+📱 Untuk tampilan lebih lengkap & rapi, silakan aktifkan <b>Situs Desktop</b> di browser Anda.
+</div>
+<div class="container" id="mainApp" style="display:none;">
+<div class="card">
+
+<button onclick="toggleDark()">🌙 Dark Mode</button>
+<button onclick="logout()">Logout</button>
+
+<h2>💰 MyKeuangan</h2>
+
+<div style="text-align:center;margin-bottom:10px;">
+<img id="profilePreview" class="profile-img" src="" onclick="profileUpload.click()">
+<input type="file" id="profileUpload" hidden>
+</div>
+
+<button onclick="exportExcel()">📥 Export Excel</button>
+
+<div class="balance">Saldo: Rp <span id="balance">0</span></div>
+
+<form id="financeForm">
+<input type="text" id="description" placeholder="Keterangan" required>
+<input type="number" id="amount" placeholder="Jumlah" required>
+<input type="date" id="date" required>
+<select id="type">
+<option value="income">Pemasukan</option>
+<option value="expense">Pengeluaran</option>
+</select>
+<button type="submit">Simpan</button>
+</form>
+
+<h3>🎯 Target Tabungan</h3>
+<input type="number" id="targetInput" placeholder="Masukkan target">
+<button onclick="setTarget()">Set Target</button>
+
+<div class="progress-bar">
+<div class="progress" id="progressBar"></div>
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Tanggal</th>
+<th>Keterangan</th>
+<th>Jumlah</th>
+<th>Tipe</th>
+<th>Aksi</th>
+</tr>
+</thead>
+<tbody id="transactionList"></tbody>
+</table>
+
+<canvas id="monthlyChart"></canvas>
+<canvas id="pieChart"></canvas>
+
+</div>
+</div>
+
+<script>
+setTimeout(()=>{splash.style.display="none";},2000);
+
+/* SOUND */
+document.addEventListener("click",e=>{
+if(e.target.tagName==="BUTTON"){
+clickSound.currentTime=0;
+clickSound.play();
+}
+});
+
+/* AUTH SYSTEM */
+let currentUser=null;
+
+function showSignup(){
+loginCard.style.display="none";
+signupCard.style.display="block";
+}
+function showLogin(){
+signupCard.style.display="none";
+loginCard.style.display="block";
+}
+
+function signup(){
+const user=signupUser.value;
+const pass=signupPass.value;
+localStorage.setItem("user_"+user,pass);
+alert("Akun berhasil dibuat!");
+showLogin();
+}
+
+function login(){
+const user=loginUser.value;
+const pass=loginPass.value;
+const savedPass=localStorage.getItem("user_"+user);
+
+if(savedPass===pass){
+
+currentUser=user;
+
+authBox.style.display="none";
+mainApp.style.display="block";
+
+/* RESET BALANCE DISPLAY */
+currentDisplayedBalance = 0;
+
+/* LOAD SEMUA DATA PER USER */
+loadUserData();
+
+}else alert("Login gagal!");
+}
+
+function logout(){
+mainApp.style.display="none";
+authBox.style.display="flex";
+
+/* JANGAN RESET FOTO DI SINI */
+currentUser = null;
+
+/* RESET INPUT TARGET */
+targetInput.value = "";
+}
+
+/* ================= DATA PER USER ================= */
+
+let transactions=[];
+let target=0;
+let chart,pie;
+let currentDisplayedBalance=0;
+
+function loadUserData(){
+
+/* LOAD TRANSACTIONS PER USER */
+transactions = JSON.parse(localStorage.getItem("trx_"+currentUser)) || [];
+
+/* LOAD TARGET PER USER */
+target = parseInt(localStorage.getItem("target_"+currentUser)) || 0;
+
+if(target > 0){
+    targetInput.value = target;
+}else{
+    targetInput.value = "";
+}
+
+/* LOAD FOTO PROFIL PER USER */
+const savedPhoto = localStorage.getItem("profile_"+currentUser);
+if(savedPhoto){
+    profilePreview.src = savedPhoto;
+}else{
+    profilePreview.src = "";
+}
+
+/* RENDER SEMUA */
+renderData();
+}
+
+function saveData(){
+localStorage.setItem("trx_"+currentUser,JSON.stringify(transactions));
+localStorage.setItem("target_"+currentUser,target);
+}
+
+financeForm.addEventListener("submit",function(e){
+e.preventDefault();
+
+const trx={
+description:description.value,
+amount:parseInt(amount.value),
+date:date.value,
+type:type.value
+};
+
+transactions.push(trx);
+saveData();
+renderData();
+this.reset();
+});
+
+function deleteTransaction(index){
+transactions.splice(index,1);
+saveData();
+renderData();
+}
+
+function setTarget(){
+target=parseInt(targetInput.value) || 0;
+saveData();
+renderData();
+}
+
+function animateBalance(newBalance){
+const duration=800;
+const frameRate=20;
+const totalFrames=duration/frameRate;
+const diff=newBalance-currentDisplayedBalance;
+let frame=0;
+
+const counter=setInterval(()=>{
+frame++;
+const progress=frame/totalFrames;
+const value=currentDisplayedBalance+diff*progress;
+
+balance.textContent=Math.round(value).toLocaleString("id-ID");
+
+if(frame>=totalFrames){
+clearInterval(counter);
+currentDisplayedBalance=newBalance;
+}
+},frameRate);
+}
+
+function renderData(){
+
+transactionList.innerHTML="";
+
+let balanceTotal=0;
+let monthlyIncome={},monthlyExpense={},categoryExpense={};
+
+transactions.forEach((trx,index)=>{
+
+if(trx.type==="income"){
+balanceTotal+=trx.amount;
+monthlyIncome[trx.date.slice(0,7)]=(monthlyIncome[trx.date.slice(0,7)]||0)+trx.amount;
+}else{
+balanceTotal-=trx.amount;
+monthlyExpense[trx.date.slice(0,7)]=(monthlyExpense[trx.date.slice(0,7)]||0)+trx.amount;
+categoryExpense[trx.description]=(categoryExpense[trx.description]||0)+trx.amount;
+}
+
+const row=document.createElement("tr");
+row.innerHTML=`
+<td>${trx.date}</td>
+<td>${trx.description}</td>
+<td class="${trx.type}">Rp ${trx.amount.toLocaleString("id-ID")}</td>
+<td>${trx.type}</td>
+<td><button onclick="deleteTransaction(${index})">🗑️</button></td>`;
+
+transactionList.appendChild(row);
+});
+
+animateBalance(balanceTotal);
+updateProgress(balanceTotal);
+updateChart(monthlyIncome,monthlyExpense);
+updatePie(categoryExpense);
+}
+
+function updateProgress(balance=0){
+
+if(target > 0){
+let percent = (balance/target)*100;
+if(percent>100) percent=100;
+progressBar.style.width = percent + "%";
+}else{
+progressBar.style.width = "0%";
+}
+}
+
+function updateChart(income,expense){
+if(chart) chart.destroy();
+
+chart=new Chart(monthlyChart,{
+type:"bar",
+data:{
+labels:Object.keys({...income,...expense}),
+datasets:[
+{label:"Pemasukan",data:Object.values(income)},
+{label:"Pengeluaran",data:Object.values(expense)}
+]
+}
+});
+}
+
+function updatePie(data){
+if(pie) pie.destroy();
+
+pie=new Chart(pieChart,{
+type:"pie",
+data:{labels:Object.keys(data),datasets:[{data:Object.values(data)}]}
+});
+}
+
+function exportExcel(){
+const ws=XLSX.utils.json_to_sheet(transactions);
+const wb=XLSX.utils.book_new();
+XLSX.utils.book_append_sheet(wb,ws,"Keuangan");
+XLSX.writeFile(wb,"MyKeuangan.xlsx");
+}
+
+profileUpload.addEventListener("change",function(){
+
+if(!currentUser) return;
+
+const reader=new FileReader();
+
+reader.onload=function(e){
+localStorage.setItem("profile_"+currentUser,e.target.result);
+profilePreview.src=e.target.result;
+};
+
+reader.readAsDataURL(this.files[0]);
+});
+
+function toggleDark(){
+document.body.classList.toggle("dark");
+}
+function checkMobileNotice(){
+if(window.innerWidth <= 768){
+mobileNotice.style.display = "block";
+}else{
+mobileNotice.style.display = "none";
+}
+}
+
+window.addEventListener("resize", checkMobileNotice);
+window.addEventListener("load", checkMobileNotice);
+</script>
+</body>
+</html>
